@@ -1,53 +1,32 @@
 import scrapy
 from spiders.myspider import MySpider
-from spiders.getwebsitelink import GetWebsiteLink
 from spiders.websitecrawl import WebsiteCrawl
 from scrapy.crawler import CrawlerProcess
 from twisted.internet import reactor, defer
 from scrapy.crawler import CrawlerRunner
 from scrapy.utils.log import configure_logging
+from scrapy.utils.project import get_project_settings
 import urlparse
-import csv
+import json
 
-csv_fields = ['Article_Link', 'Website_Link', 'Status']
-links_array = []
+data=[]
+s = get_project_settings()
 
-configure_logging()
-runner = CrawlerRunner()
+configure_logging(s)
+runner = CrawlerRunner(s)
 @defer.inlineCallbacks
 def crawl():
     yield runner.crawl(MySpider)
-    yield runner.crawl(GetWebsiteLink)
-    with open('article_links.csv', 'rb') as links:
-        article_links_reader = csv.DictReader(links, csv_fields)
-        for row in article_links_reader:
-            links_array.append(row)
 
-    for links in links_array:
-        parsed_uri = urlparse.urlparse(links['Website_Link'])
+    with open('article_links.json', 'rb') as json_file:
+        data = json.load(json_file)
+
+    for row in data:
+        parsed_uri = urlparse.urlparse(row['Website_Link'])
         allowedDomains = []
         allowedDomains.append('{uri.netloc}'.format(uri=parsed_uri))
-        yield runner.crawl(WebsiteCrawl, allowed_domains = allowedDomains, start_urls = [links['Website_Link']], url_to_look = links['Article_Link'])    
+        yield runner.crawl(WebsiteCrawl, row_id = row['ID'], allowed_domains = allowedDomains, start_urls = [row['Website_Link']], urls_to_look = row['Article_Links'])
     reactor.stop()
 
 crawl()
 reactor.run()
-
-# process = CrawlerProcess()
-
-# process.crawl(MySpider)
-# process.crawl(GetWebsiteLink)
-
-# with open('article_links.csv', 'rb') as links:
-#     article_links_reader = csv.DictReader(links, csv_fields)
-#     for row in article_links_reader:
-#         links_array.append(row)
-
-# for links in links_array:
-#     parsed_uri = urlparse.urlparse(links['Website_Link'])
-#     allowedDomains = []
-#     allowedDomains.append('{uri.netloc}'.format(uri=parsed_uri))
-#     process.crawl
-#     process.crawl(WebsiteCrawl, allowed_domains = allowedDomains, start_urls = [links['Website_Link']], url_to_look = links['Article_Link'])
-
-# process.start()

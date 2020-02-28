@@ -1,41 +1,55 @@
 import scrapy
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
-from scrapy.http.request import Request
 from scrapy.exceptions import CloseSpider
-import csv
+from scrapy import signals
+import json
 
 class WebsiteCrawl(CrawlSpider):
     name = 'websitecrawl'
-    #allowed_domains = []
-    #start_urls = []
-    #url_to_look = ''
-    csv_fields = ['Article_Link', 'Website_Link', 'Status']
 
-    def __init__(self, allowed_domains = None, start_urls = None, url_to_look = None, *args, **kwargs):
+    def __init__(self, row_id = None, allowed_domains = None, start_urls = None, urls_to_look = None, *args, **kwargs):
+        self.row_id = row_id
         self.allowed_domains = allowed_domains  
         self.start_urls = start_urls
-        self.url_to_look = url_to_look
+        self.urls_to_look = urls_to_look
+        self.found_at = []
+
+        with open('article_links.json', 'rb') as json_file:
+            self.data = json.load(json_file)
+
         super(WebsiteCrawl, self).__init__(*args, **kwargs)
 
     rules = (
         Rule(LinkExtractor(), callback='parse_url', follow=True),
     )
 
-    # def start_requests(self):
-    #     with open('article_links.csv', 'rb') as urls:
-    #         article_links_reader = csv.DictReader(urls, self.csv_fields)
-    #         for row in article_links_reader:
-    #             if row['Article_Link'] and row['Website_Link']:
-    #                 yield Request(row['Website_Link'], self.parse, 'GET', None, None, meta={'article_link': row['Article_Link'], 'website_link': row['Website_Link']})
-
     def parse_url(self, response):
         hxs = scrapy.Selector(response)
         all_links = hxs.xpath('*//a/@href').extract()
         for link in all_links:
-            if link == self.url_to_look:  
-                file = open('output.txt', 'a+')
-                file.write('FOUND - ' + self.url_to_look + ' - ' + response.url + '\n')
-                file.close()
-                #print('FOUND - ' + response.url)
-                raise CloseSpider('FOUND')
+            for url_to_look in self.urls_to_look:
+                if link == url_to_look:  
+                    #file = open('output.txt', 'a+')
+                    #file.write('FOUND - ' + url_to_look + ' - ' + response.url + '\n')
+                    #file.close()
+                    self.found_at.append(response.url)
+                    raise CloseSpider('FOUND')
+
+    @classmethod
+    def from_crawler(cls, crawler, *args, **kwargs):
+        spider = super(WebsiteCrawl, cls).from_crawler(crawler, *args, **kwargs)
+        crawler.signals.connect(spider.spider_closed, signal=signals.spider_closed)
+        return spider
+
+    def spider_closed(self, spider):
+        for row in self.data:
+            if row['ID'] == self.row_id:
+                if len(self.found_at) > 0:
+                    self.data[row['ID']]['Result'] = { 'Status': 'Found', 'Found_At': self.found_at }
+                    self.found_at = []
+                else:
+                    self.data[row['ID']]['Result'] = { 'Status': 'Not Found' }
+                
+        with open('article_links.json', 'wb') as write_urls:
+            json.dump(self.data, write_urls)
