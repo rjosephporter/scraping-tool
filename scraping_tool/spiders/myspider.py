@@ -33,8 +33,6 @@ class MySpider(scrapy.Spider):
         for row in self.data:
             if row['ID'] == response.meta['id']:
                 self.data[row['ID']]['Website_Link'] = response.url
-                #with open('article_links.json', 'wb') as write_urls:
-                    #json.dump(self.data, write_urls)
 
     @classmethod
     def from_crawler(cls, crawler, *args, **kwargs):

@@ -30,9 +30,6 @@ class WebsiteCrawl(CrawlSpider):
         for link in all_links:
             for url_to_look in self.urls_to_look:
                 if link == url_to_look:  
-                    #file = open('output.txt', 'a+')
-                    #file.write('FOUND - ' + url_to_look + ' - ' + response.url + '\n')
-                    #file.close()
                     self.found_at.append(response.url)
                     raise CloseSpider('FOUND')
 
