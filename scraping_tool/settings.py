@@ -90,3 +90,5 @@ ROBOTSTXT_OBEY = False
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 HTTPERROR_ALLOWED_CODES = [403]
+
+LOG_LEVEL='INFO'

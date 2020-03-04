@@ -21,11 +21,13 @@ def crawl():
     with open('article_links.json', 'rb') as json_file:
         data = json.load(json_file)
 
+    total_websites = len(data)
+
     for row in data:
         parsed_uri = urlparse.urlparse(row['Website_Link'])
         allowedDomains = []
         allowedDomains.append('{uri.netloc}'.format(uri=parsed_uri))
-        yield runner.crawl(WebsiteCrawl, row_id = row['ID'], allowed_domains = allowedDomains, start_urls = [row['Website_Link']], urls_to_look = row['Article_Links'])
+        yield runner.crawl(WebsiteCrawl, row_id = row['ID'], allowed_domains = allowedDomains, start_urls = [row['Website_Link']], urls_to_look = row['Article_Links'], total = total_websites)
     reactor.stop()
 
 crawl()

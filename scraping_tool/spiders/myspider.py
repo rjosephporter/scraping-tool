@@ -2,12 +2,23 @@ import scrapy
 import json
 from scrapy import signals
 from scrapy.http.request import Request
+import logging
 
 class MySpider(scrapy.Spider):
     name = 'myspider'
     start_urls = ['https://plus-japan.sakura.ne.jp/area.html']
     base_url = 'https://plus-japan.sakura.ne.jp'
     data = []
+
+    def __init__(self, *args, **kwargs):
+        logging.getLogger('scrapy.spidermiddlewares.httperror').setLevel(logging.WARNING)
+        logging.getLogger('scrapy.core.scraper').setLevel(logging.WARNING)
+        logging.getLogger('scrapy.middleware').setLevel(logging.WARNING)
+        logging.getLogger('scrapy.statscollectors').setLevel(logging.WARNING)
+        logging.getLogger('scrapy.extensions.telnet').setLevel(logging.WARNING)
+        logging.getLogger('scrapy.core.engine').setLevel(logging.WARNING)
+        logging.getLogger('scrapy.crawler').setLevel(logging.WARNING)
+        super(MySpider, self).__init__(*args, **kwargs)
 
     def parse(self, response):
         for index, link in enumerate(response.css('div.archive_box2>div.img>a::attr(href)')):
